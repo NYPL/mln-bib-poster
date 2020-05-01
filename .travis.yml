@@ -14,7 +14,7 @@ deploy:
   skip_cleanup: true
   script: npm run deploy-bib-qa
   on:
-    branch: qa
+    branch: update-node-version
 - provider: script
   skip_cleanup: true
   script: npm run deploy-bib-production
