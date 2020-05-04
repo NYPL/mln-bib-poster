@@ -83,7 +83,7 @@ exports.kinesisHandler = function (records, context, callback) {
   // bulk posts records
   //function postRecords (accessToken, records) {
   function postRecords (records, accessToken) {
-    logger.info({'message': 'Posting records'})
+    logger.info({'message': 'Posting records data:' + records})
     var options = {
       uri: process.env['MLN_API_URL'],
       method: 'POST',
@@ -92,7 +92,8 @@ exports.kinesisHandler = function (records, context, callback) {
       json: true
     }
     request(options, function (error, response, body) {
-      logger.info({'message': 'Posting...'})
+      logger.info({'message': 'Posting........'})
+      logger.info({'message': 'Response: ' + response.statusCode + "  Records info:" + records})
       if (response.statusCode !== 200) {
         if (response.statusCode === 401) {
           // Clear access token so new one will be requested on retried request
