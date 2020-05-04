@@ -42,8 +42,8 @@ exports.kinesisHandler = function (records, context, callback) {
       records.forEach(function(record){
         if(record.deleted){
           deletedRecordsArray.push(record)
-          return; 
-        } 
+          return;
+        }
         if(record.materialType.value == "TEACHER SET"){
           updateCreateRecordsArray.push(record)
         } else {
@@ -60,7 +60,7 @@ exports.kinesisHandler = function (records, context, callback) {
       callback(error)
     }
   }
-  
+
   // map to records objects as needed
   function parseKinesis (payload, avroType) {
     logger.info({'message': 'Parsing Kinesis'})
@@ -93,7 +93,6 @@ exports.kinesisHandler = function (records, context, callback) {
     }
     request(options, function (error, response, body) {
       logger.info({'message': 'Posting...'})
-      logger.info({'message': 'Response: ' + response.statusCode + "  Records info:" + records})
       if (response.statusCode !== 200) {
         if (response.statusCode === 401) {
           // Clear access token so new one will be requested on retried request
