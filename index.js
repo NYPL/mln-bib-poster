@@ -93,6 +93,7 @@ exports.kinesisHandler = function (records, context, callback) {
     }
     request(options, function (error, response, body) {
       logger.info({'message': 'Posting...'})
+      logger.info({'message': 'Response: ' + response.statusCode + "  Records info:" + records})
       if (response.statusCode !== 200) {
         if (response.statusCode === 401) {
           // Clear access token so new one will be requested on retried request
