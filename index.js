@@ -83,7 +83,7 @@ exports.kinesisHandler = function (records, context, callback) {
   // bulk posts records
   //function postRecords (accessToken, records) {
   function postRecords (records, accessToken) {
-    logger.info({'message': 'Posting records data' + records})
+    logger.info({'message': 'Posting records data:' + records})
     var options = {
       uri: process.env['MLN_API_URL'],
       method: 'POST',
