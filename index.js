@@ -7,7 +7,6 @@ const awsDecrypt = require('./helper/awsDecrypt.js')
 const logger = require('./helper/logger.js')
 
 
-RETRY_RESPONSE_CODES = [500, 401]
 // Initialize cache
 var CACHE = {}
 
@@ -96,7 +95,7 @@ exports.kinesisHandler = function (records, context, callback) {
       logger.info({'message': 'Posting........'})
       logger.info({'message': 'Response: ' + response.statusCode + "  Records info:" + records})
       
-      if (RETRY_RESPONSE_CODES.include?(response.statusCode)) {
+      if ([500, 401].include?(response.statusCode)) {
         if (response.statusCode === 401) {
           // Clear access token so new one will be requested on retried request
           CACHE['accessToken'] = null
@@ -104,8 +103,11 @@ exports.kinesisHandler = function (records, context, callback) {
         callback(new Error())
         logger.error({'message': 'POST Error! ', 'response': response})
         return
+      } else if ([400, 404].include?(response.statusCode)) {
+        logger.error({'message': 'Post api input validations failed!', 'response': response})
+      } else {
+        logger.info({'message': 'POST Success.'})
       }
-      logger.info({'message': 'POST Success'})
     })
   }
 
@@ -122,7 +124,7 @@ exports.kinesisHandler = function (records, context, callback) {
     request(options, function (error, response, body) {
       logger.info({'message': 'Deleting...'})
       logger.info({'message': 'Response: ' + response.statusCode})
-      if (RETRY_RESPONSE_CODES.include?(response.statusCode)) {
+      if ([500, 401].include?(response.statusCode)) {
         if (response.statusCode === 401) {
           // Clear access token so new one will be requested on retried request
           CACHE['accessToken'] = null
@@ -130,9 +132,11 @@ exports.kinesisHandler = function (records, context, callback) {
         callback(new Error())
         logger.error({'message': 'DELETE Error! ', 'response': response})
         return
+      }else if ([400, 404].include?(response.statusCode)) {
+        logger.error({'message': 'DELETE api input validations failed!', 'response': response})
+      }else {
+        logger.info({'message': 'DELETE Success.'})
       }
-
-      logger.info({'message': 'DELETE Success'})
     })
   }
 
