@@ -7,6 +7,7 @@ const awsDecrypt = require('./helper/awsDecrypt.js')
 const logger = require('./helper/logger.js')
 
 
+RETRY_RESPONSE_CODES = [500, 401]
 // Initialize cache
 var CACHE = {}
 
@@ -94,7 +95,8 @@ exports.kinesisHandler = function (records, context, callback) {
     request(options, function (error, response, body) {
       logger.info({'message': 'Posting........'})
       logger.info({'message': 'Response: ' + response.statusCode + "  Records info:" + records})
-      if (response.statusCode !== 200) {
+      
+      if (RETRY_RESPONSE_CODES.include?(response.statusCode)) {
         if (response.statusCode === 401) {
           // Clear access token so new one will be requested on retried request
           CACHE['accessToken'] = null
@@ -120,7 +122,7 @@ exports.kinesisHandler = function (records, context, callback) {
     request(options, function (error, response, body) {
       logger.info({'message': 'Deleting...'})
       logger.info({'message': 'Response: ' + response.statusCode})
-      if (response.statusCode !== 200) {
+      if (RETRY_RESPONSE_CODES.include?(response.statusCode)) {
         if (response.statusCode === 401) {
           // Clear access token so new one will be requested on retried request
           CACHE['accessToken'] = null
