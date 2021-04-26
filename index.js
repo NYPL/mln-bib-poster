@@ -105,8 +105,6 @@ exports.kinesisHandler = function (records, context, callback) {
         return
       } else if ([400, 404].include?(response.statusCode)) {
         logger.error({'message': 'Post api input validations failed!', 'response': response})
-      } else {
-        logger.info({'message': 'POST Success.'})
       }
     })
   }
@@ -134,8 +132,6 @@ exports.kinesisHandler = function (records, context, callback) {
         return
       }else if ([400, 404].include?(response.statusCode)) {
         logger.error({'message': 'DELETE api input validations failed!', 'response': response})
-      }else {
-        logger.info({'message': 'DELETE Success.'})
       }
     })
   }
