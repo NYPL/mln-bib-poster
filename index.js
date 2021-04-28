@@ -94,7 +94,8 @@ exports.kinesisHandler = function (records, context, callback) {
     request(options, function (error, response, body) {
       logger.info({'message': 'Posting........'})
       logger.info({'message': 'Response: ' + response.statusCode + "  Records info:" + records})
-      if (response.statusCode !== 200) {
+      
+      if ([500, 401].include?(response.statusCode)) {
         if (response.statusCode === 401) {
           // Clear access token so new one will be requested on retried request
           CACHE['accessToken'] = null
@@ -102,8 +103,9 @@ exports.kinesisHandler = function (records, context, callback) {
         callback(new Error())
         logger.error({'message': 'POST Error! ', 'response': response})
         return
+      } else if ([400, 404].include?(response.statusCode)) {
+        logger.error({'message': 'Post api input validations failed!', 'response': response})
       }
-      logger.info({'message': 'POST Success'})
     })
   }
 
@@ -120,7 +122,7 @@ exports.kinesisHandler = function (records, context, callback) {
     request(options, function (error, response, body) {
       logger.info({'message': 'Deleting...'})
       logger.info({'message': 'Response: ' + response.statusCode})
-      if (response.statusCode !== 200) {
+      if ([500, 401].include?(response.statusCode)) {
         if (response.statusCode === 401) {
           // Clear access token so new one will be requested on retried request
           CACHE['accessToken'] = null
@@ -128,9 +130,9 @@ exports.kinesisHandler = function (records, context, callback) {
         callback(new Error())
         logger.error({'message': 'DELETE Error! ', 'response': response})
         return
+      }else if ([400, 404].include?(response.statusCode)) {
+        logger.error({'message': 'DELETE api input validations failed!', 'response': response})
       }
-
-      logger.info({'message': 'DELETE Success'})
     })
   }
 
