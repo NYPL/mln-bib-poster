@@ -104,7 +104,7 @@ exports.kinesisHandler = function (records, context, callback) {
         logger.error({'message': 'POST Error! ', 'response': response})
         return
       } else if ([400, 404].includes(response.statusCode)) {
-        logger.error({'message': 'Post api input validations failed!', 'response': response})
+        logger.info({'message': 'Post api input validations failed!', 'response': response})
       }
     })
   }
