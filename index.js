@@ -147,7 +147,7 @@ exports.kinesisHandler = function (records, context, callback) {
         return;
       }
 
-      logger.info({ message: 'Response status: ' + response.statusCode + ' Response Body: ' + response });
+      logger.info({ message: 'Delete API Response status: ' + response.statusCode + ' Response Body: ' + response });
 
       if ([500, 401].includes(response.statusCode)) {
         if (retries < MAX_RETRIES) {
@@ -159,7 +159,7 @@ exports.kinesisHandler = function (records, context, callback) {
           }
 
           setTimeout(() => {
-            postRecords(records, accessToken, retries + 1);
+            deleteRecords(records, accessToken, retries + 1);
           }, delay);
         } else {
           logger.error({ message: 'Max retries reached. Request failed.', response });
