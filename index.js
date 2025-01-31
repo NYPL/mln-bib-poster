@@ -35,20 +35,24 @@ exports.kinesisHandler = function (records, context, callback) {
           return parseKinesis(record, avroType)
         })
       // post to API
-
       updateCreateRecordsArray = []
       deletedRecordsArray = []
 
       records.forEach(function(record){
+        logger.info({'message': 'Start Record: ' + record })
         if(record.deleted){
           deletedRecordsArray.push(record)
           return;
         }
+
+        if (record.materialType === null) {
+          return;
+        }
         if(record.materialType.value == "TEACHER SET"){
-          logger.info({'message': 'Record body: ' + record })
           updateCreateRecordsArray.push(record)
         } else {
           logger.info({'message': 'Record has a value type of: ' + record.materialType.value + '. Therefore, will not send request to Rails API.'})
+          return
         }
       })
 
@@ -76,8 +80,8 @@ exports.kinesisHandler = function (records, context, callback) {
     return record
     }
     catch (err) {
-    logger.error({'message': err.message, 'error': err})
-    callback(null)
+      logger.error({'message': err.message, 'error': err})
+      callback(null)
     }
   }
 
@@ -123,6 +127,7 @@ exports.kinesisHandler = function (records, context, callback) {
         }
       } else if ([400, 404].includes(response.statusCode)) {
         logger.error({ message: 'Post API input validation failed!', response });
+        return
       } else {
         logger.info({ message: 'Request successful', response });
       }
@@ -148,7 +153,7 @@ exports.kinesisHandler = function (records, context, callback) {
         return;
       }
 
-      logger.info({ message: 'Delete API Response status: ' + response.statusCode + ' Response Body: ' + response });
+      logger.info({ message: 'Delete API Response status: ' + response.statusCode + ' Response Body: ' + response.body });
 
       if ([500, 401].includes(response.statusCode)) {
         if (retries < MAX_RETRIES) {
@@ -168,6 +173,7 @@ exports.kinesisHandler = function (records, context, callback) {
         }
       } else if ([400, 404].includes(response.statusCode)) {
         logger.error({'message': 'DELETE api input validations failed!', 'response': response})
+        return
       } else {
         logger.info({ message: 'Request successful', response });
       }
