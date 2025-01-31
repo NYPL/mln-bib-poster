@@ -2,7 +2,7 @@
   "name": "mln-bib-poster",
   "version": "0.1.1",
   "engines": {
-    "node": "18.0.0"
+    "node": "16.0.0"
   },
   "description": "Reads bibs/items from stream, posts to MyLibraryNYC",
   "devDependencies": {},
