@@ -122,11 +122,11 @@ exports.kinesisHandler = function (records, context, callback) {
             postRecords(records, accessToken, retries + 1);
           }, delay);
         } else {
-          logger.error({ message: 'Max retries reached. Request failed.', response });
+          logger.error({ message: 'Max retries reached. Request failed.', 'Response Body': response.body });
           return
         }
       } else if ([400, 404].includes(response.statusCode)) {
-        logger.error({ message: 'Post API input validation failed!', response });
+        logger.error({ message: 'Post API input validation failed!', 'Response Body': response.body });
         return
       } else {
         logger.info({ message: 'Request successful', response });
@@ -168,11 +168,11 @@ exports.kinesisHandler = function (records, context, callback) {
             deleteRecords(records, accessToken, retries + 1);
           }, delay);
         } else {
-          logger.error({ message: 'Max retries reached. Request failed.', response });
+          logger.error({ message: 'Max retries reached. Request failed.', 'Response Body': response.body });
           return
         }
       } else if ([400, 404].includes(response.statusCode)) {
-        logger.error({'message': 'DELETE api input validations failed!', 'response': response.body})
+        logger.error({'message': 'DELETE api input validations failed!', 'Response Body': response.body})
         return
       } else {
         logger.info({ message: 'Request successful', response });
