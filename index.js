@@ -107,7 +107,7 @@ exports.kinesisHandler = function (records, context, callback) {
         return;
       }
 
-      logger.info({ message: 'Response status: ' + response.statusCode + ' Response Body: ' + response });
+      logger.info({ message: 'Response status: ' + response.statusCode + ' Response Body: ' + response.body });
 
       if ([500, 401].includes(response.statusCode)) {
         if (retries < MAX_RETRIES) {
@@ -129,7 +129,7 @@ exports.kinesisHandler = function (records, context, callback) {
         logger.error({ message: 'Post API input validation failed!', 'Response Body': response.body });
         return
       } else {
-        logger.info({ message: 'Request successful', response });
+        logger.info({ message: 'Request successful', 'Response Body': response.body });
       }
     });
   }
@@ -175,7 +175,7 @@ exports.kinesisHandler = function (records, context, callback) {
         logger.error({'message': 'DELETE api input validations failed!', 'Response Body': response.body})
         return
       } else {
-        logger.info({ message: 'Request successful', response });
+        logger.info({ message: 'Request successful', 'Response Body': response.body });
       }
     });
   }
