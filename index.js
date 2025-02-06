@@ -35,19 +35,24 @@ exports.kinesisHandler = function (records, context, callback) {
           return parseKinesis(record, avroType)
         })
       // post to API
-
       updateCreateRecordsArray = []
       deletedRecordsArray = []
 
       records.forEach(function(record){
+        logger.info({'message': 'Start Record: ' + record })
         if(record.deleted){
           deletedRecordsArray.push(record)
+          return;
+        }
+
+        if (record.materialType === null) {
           return;
         }
         if(record.materialType.value == "TEACHER SET"){
           updateCreateRecordsArray.push(record)
         } else {
           logger.info({'message': 'Record has a value type of: ' + record.materialType.value + '. Therefore, will not send request to Rails API.'})
+          return
         }
       })
 
@@ -67,7 +72,7 @@ exports.kinesisHandler = function (records, context, callback) {
       // decode base64
     try{
 
-    var buf = new Buffer(payload.kinesis.data, 'base64')
+    var buf = new Buffer.from(payload.kinesis.data, 'base64')
       // decode avro
     var record = avroType.fromBuffer(buf)
 
@@ -75,43 +80,63 @@ exports.kinesisHandler = function (records, context, callback) {
     return record
     }
     catch (err) {
-    logger.error({'message': err.message, 'error': err})
-    callback(null)
+      logger.error({'message': err.message, 'error': err})
+      callback(null)
     }
   }
 
   // bulk posts records
   //function postRecords (accessToken, records) {
-  function postRecords (records, accessToken) {
-    logger.info({'message': 'Posting records data:' + records})
-    var options = {
+  const MAX_RETRIES = 5;
+  const RETRY_DELAY = 1000; // Initial delay of 1 second
+
+  function postRecords(records, accessToken, retries = 0) {
+    logger.info({ message: `Posting records, attempt ${retries + 1}` });
+
+    const options = {
       uri: process.env['MLN_API_URL'],
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}` },
       body: records,
       json: true
-    }
-    request(options, function (error, response, body) {
-      logger.info({'message': 'Posting........'})
-      logger.info({'message': 'Response: ' + response.statusCode + "  Records info:" + records})
-      
-      if ([500, 401].includes(response.statusCode)) {
-        if (response.statusCode === 401) {
-          // Clear access token so new one will be requested on retried request
-          CACHE['accessToken'] = null
-        }
-        callback(new Error())
-        logger.error({'message': 'POST Error! ', 'response': response})
-        return
-      } else if ([400, 404].includes(response.statusCode)) {
-        logger.info({'message': 'Post api input validations failed!', 'response': response})
+    };
+
+    request(options, (error, response, body) => {
+      if (error) {
+        logger.error({ message: 'Request failed', error });
+        return;
       }
-    })
+
+      logger.info({ message: 'Response status: ' + response.statusCode + ' Response Body: ' + response.body });
+
+      if ([500, 401].includes(response.statusCode)) {
+        if (retries < MAX_RETRIES) {
+          const delay = Math.pow(2, retries) * RETRY_DELAY; // Exponential backoff
+          logger.info({ message: `Retrying in ${delay / 1000} seconds...` });
+
+          if (response.statusCode === 401) {
+            CACHE['accessToken'] = null; // Clear access token for re-authentication
+          }
+
+          setTimeout(() => {
+            postRecords(records, accessToken, retries + 1);
+          }, delay);
+        } else {
+          logger.error({ message: 'Max retries reached. Request failed.', 'Response Body': response.body });
+          return
+        }
+      } else if ([400, 404].includes(response.statusCode)) {
+        logger.error({ message: 'Post API input validation failed!', 'Response Body': response.body });
+        return
+      } else {
+        logger.info({ message: 'Request successful', 'Response Body': response.body });
+      }
+    });
   }
 
-
-  function deleteRecords(records, accessToken){
+  function deleteRecords(records, accessToken, retries = 0) {
     logger.info({'message': 'Deleting records'})
+    logger.info({ message: `Deleting records, attempt ${retries + 1}` });
     var options = {
       uri: process.env['MLN_API_URL'],
       method: 'DELETE',
@@ -119,21 +144,40 @@ exports.kinesisHandler = function (records, context, callback) {
       body: records,
       json: true
     }
-    request(options, function (error, response, body) {
+
+    request(options, (error, response, body) => {
       logger.info({'message': 'Deleting...'})
-      logger.info({'message': 'Response: ' + response.statusCode})
-      if ([500, 401].includes(response.statusCode)) {
-        if (response.statusCode === 401) {
-          // Clear access token so new one will be requested on retried request
-          CACHE['accessToken'] = null
-        }
-        callback(new Error())
-        logger.error({'message': 'DELETE Error! ', 'response': response})
-        return
-      }else if ([400, 404].includes(response.statusCode)) {
-        logger.error({'message': 'DELETE api input validations failed!', 'response': response})
+
+      if (error) {
+        logger.error({ message: 'Request failed', error });
+        return;
       }
-    })
+
+      logger.info({ message: 'Delete API Response status: ' + response.statusCode + ' Response Body: ' + response.body });
+
+      if ([500, 401].includes(response.statusCode)) {
+        if (retries < MAX_RETRIES) {
+          const delay = Math.pow(2, retries) * RETRY_DELAY; // Exponential backoff
+          logger.info({ message: `Retrying in ${delay / 1000} seconds...` });
+
+          if (response.statusCode === 401) {
+            CACHE['accessToken'] = null; // Clear access token for re-authentication
+          }
+
+          setTimeout(() => {
+            deleteRecords(records, accessToken, retries + 1);
+          }, delay);
+        } else {
+          logger.error({ message: 'Max retries reached. Request failed.', 'Response Body': response.body });
+          return
+        }
+      } else if ([400, 404].includes(response.statusCode)) {
+        logger.error({'message': 'DELETE api input validations failed!', 'Response Body': response.body})
+        return
+      } else {
+        logger.info({ message: 'Request successful', 'Response Body': response.body });
+      }
+    });
   }
 
   function schema () {
